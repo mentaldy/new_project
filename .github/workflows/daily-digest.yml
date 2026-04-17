@@ -1,0 +1,59 @@
+name: daily-digest
+
+on:
+  schedule:
+    # 07:00 KST weekdays = 22:00 UTC Sun-Thu.
+    - cron: "0 22 * * 0-4"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to persist data/picks.csv between runs
+
+concurrency:
+  group: daily-digest
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Restore persisted state
+        uses: actions/cache@v4
+        with:
+          path: data/
+          key: app-state-${{ github.run_id }}
+          restore-keys: |
+            app-state-
+
+      - name: Run daily digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+        run: python -m src.daily_digest
+
+      - name: Backfill forward returns
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m src.tracking backfill
+
+      - name: Commit picks log
+        run: |
+          git config user.name "kr-stock-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/picks.csv data/corp_codes.xml || true
+          git diff --cached --quiet || git commit -m "chore: daily picks + returns [skip ci]"
+          git push || true

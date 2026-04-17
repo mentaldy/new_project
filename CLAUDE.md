@@ -1,109 +1,97 @@
 # Korean Stock Analyzing & Reporting App
 
 ## Project Overview
-Internal AI-powered stock recommendation tool for the Korean market (KOSPI/KOSDAQ). The system screens a curated watchlist of ~50-100 tickers, generates Buy/Hold/Sell ratings with thesis/risks/citations using Claude Sonnet 4.6, and delivers digests via KakaoTalk on a daily pre-market schedule plus event-driven news alerts.
+Internal AI-powered stock recommendation tool for the Korean market (KOSPI/KOSDAQ). Screens a curated watchlist of ~30-100 tickers, generates Buy/Hold/Sell ratings with thesis/risks/citations using Claude Sonnet 4.6, and delivers digests via **Telegram** on a daily pre-market schedule plus event-driven news alerts. Orchestrated via **GitHub Actions cron**.
 
 ## Status
-Planning complete. MVP prototype target: 1-2 weeks. Phase 1 development next.
+MVP scaffolding in place. Needs API keys + first live run.
 
 ## Users
-- 2 internal users only. Not offered to the public.
-- No 유사투자자문업 신고 required (applies only to public-facing advisory services).
-- If we ever open to external users, regulatory posture must be revisited.
+- 2 internal users only. No 유사투자자문업 신고 required.
 
-## MVP Scope
+## Runtime Model
+**Not Claude Code orchestrated.** Python scripts triggered by GitHub Actions cron. Claude Sonnet 4.6 is called via the Anthropic SDK from inside the analysis step. Continuous operation comes from GHA, not from a live Claude session.
 
-### Output
-- For each watchlist ticker: `{rating: BUY|HOLD|SELL, thesis, target_price, stop_loss, risks, citations}`
-- Citations must reference the specific DART filing URL and metrics used, so every rec is auditable.
-
-### Cadence
-- **Daily pre-market digest** (~07:00 KST): full watchlist scored, Kakao summary sent.
-- **Event-driven alerts**: news poller (every 15 min) gates candidate items through Claude ("is this materially compelling?"); if yes, push Kakao alert.
-
-### Universe
-- Curated watchlist of ~50-100 Korean tickers.
-- Seed from KOSPI 100; maintained in `config/watchlist.yaml`.
-- User edits the list over time based on portfolio interest.
+## Cadence
+- **Daily pre-market digest**: GHA cron `0 22 * * 0-4` (UTC) = 07:00 KST weekdays.
+- **News poller**: GHA cron `*/15 0-6 * * 1-5` (UTC) = every 15 min during KST market hours.
 
 ## Architecture
 
-### Data Sources (all free)
-- **pykrx** — OHLCV, market cap, PER/PBR/PSR, foreign ownership, KOSPI/KOSDAQ indices.
-- **OpenDART API** — quarterly/annual filings (사업보고서, 분기/반기보고서), 공시.
-- **FinanceDataReader** — backup price source.
-- **Naver Finance / 연합뉴스 RSS** — Korean news per ticker (respect ToS, cache).
+### Data Sources (free)
+- **pykrx** — OHLCV, market cap, PER/PBR, foreign ownership.
+- **OpenDART API** — filings (사업보고서, 분기/반기보고서), 공시.
+- **Naver Finance RSS** — Korean news per ticker.
 
-### Recommendation Engine (Python)
-```
-src/
-  fetch_watchlist.py   # load config/watchlist.yaml
-  fetch_market_data.py # pykrx daily OHLCV + fundamentals
-  fetch_filings.py     # OpenDART recent filings per ticker
-  fetch_news.py        # news per ticker (cached, deduped)
-  analyze.py           # Claude Sonnet 4.6, structured output schema
-  format_report.py     # Korean-language digest for Kakao
-  send_kakao.py        # Kakao Login "나에게 보내기" API
-  track_picks.py       # log recs + compute forward returns vs KOSPI
-```
+### Modules (`src/`)
+| File | Responsibility |
+|---|---|
+| `config.py` | Load env vars + `config/watchlist.yaml` |
+| `market_data.py` | pykrx fetchers (OHLCV, fundamentals) |
+| `filings.py` | OpenDART recent filings per ticker |
+| `news.py` | Naver RSS news per ticker, with dedup state |
+| `analyze.py` | Claude Sonnet 4.6 with structured output (Pydantic) |
+| `telegram_send.py` | Telegram Bot API sender |
+| `tracking.py` | Log picks to CSV, compute forward returns |
+| `daily_digest.py` | Orchestrates the full daily run |
+| `news_poller.py` | Orchestrates the news-driven alert run |
 
-### Orchestration
-- **Cloud Run Jobs** (GCP) scheduled via Cloud Scheduler:
-  - `daily-digest` — 07:00 KST weekdays.
-  - `news-poller` — every 15 min during market hours.
-- Secrets (Anthropic API key, DART key, Kakao tokens) in Secret Manager.
+### LLM Call Design
+- Model: `claude-sonnet-4-6`.
+- Adaptive thinking + `effort: high` (Sonnet 4.6 supports both).
+- **Prompt caching** on the stable system prompt (rules, output schema guidance). Volatile ticker-specific data goes after the cache breakpoint.
+- Structured output via `client.messages.parse(output_format=Recommendation)` — Pydantic schema enforces `rating`, `confidence`, `thesis`, `target_price_krw`, `stop_loss_krw`, `risks`, `citations`.
+- Per-ticker calls (not one big call) for focused reasoning and easy per-ticker retry.
 
-### Delivery (KakaoTalk)
-- **Primary**: Kakao Login OAuth per user → "나에게 보내기" Message API. Each user authorizes once; refresh tokens stored in Secret Manager.
-- **Fallback**: If Kakao integration slips, ship prototype on Telegram and swap in Kakao for v1.1.
+### Delivery
+- Telegram Bot API. Create a bot via `@BotFather`, put `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_IDS` (comma-separated) in GHA secrets.
+- Telegram chosen over Kakao: no business registration, no template approval, works for 2 internal users instantly.
+- Kakao integration deferred to post-MVP.
 
 ### Pick Tracking
-- Every recommendation logged to a persistent store (Firestore or Google Sheet) with `ticker, timestamp, rating, entry_price, thesis_hash`.
-- Daily job computes 1D / 1W / 1M forward returns vs KOSPI benchmark.
-- This tracking is non-negotiable — it's how we know whether the AI is actually good.
+- `data/picks.csv` logs every rec with `timestamp_kst, ticker, rating, confidence, entry_price, thesis_hash`.
+- Daily job backfills 1D/1W/1M forward returns vs KOSPI benchmark.
 
-## Tech Stack
-- **Language**: Python 3.12
-- **Core libs**: pykrx, dart-fss (or OpenDART SDK), FinanceDataReader, pandas, httpx, pydantic
-- **LLM**: Anthropic SDK (Claude Sonnet 4.6), structured output via tool use
-- **Hosting**: GCP Cloud Run Jobs + Cloud Scheduler + Secret Manager + Firestore
-- **Config**: YAML for watchlist, `.env` for local dev
+## Key Risks
+1. **LLM hallucination on 재무제표** — structured schema requires DART filing citations + specific metric values.
+2. **Pick quality measurement** — tracking writes from day 1.
+3. **Data staleness** — DART is infrequent, after-hours prices stale. Every rec timestamps data recency.
+4. **LLM cost drift** — per-ticker calls on ~30 names ≈ $10-30/month. If universe grows to 100+, pre-filter with Haiku 4.5, escalate to Sonnet 4.6 on candidates only.
 
-## Key Risks (tracked)
-1. **Kakao delivery complexity** — "나에게 보내기" works for personal accounts but token refresh is finicky. Telegram fallback ready.
-2. **LLM hallucination on 재무제표** — mitigated via structured output requiring DART citation + specific metric values.
-3. **Pick quality measurement** — tracking infra must ship on day 1, not day 14.
-4. **Data staleness** — DART filings are infrequent, after-hours prices are stale. Every rec timestamps data recency.
-5. **LLM cost drift** — daily 100-stock scoring can get pricey. Use Haiku pre-filter → Sonnet deep-dive on candidates only, if cost becomes an issue.
+## Setup
+
+### Secrets required (GitHub Actions Secrets)
+- `ANTHROPIC_API_KEY` — Anthropic console.
+- `DART_API_KEY` — opendart.fss.or.kr (free, 5-min registration).
+- `TELEGRAM_BOT_TOKEN` — @BotFather.
+- `TELEGRAM_CHAT_IDS` — comma-separated chat IDs (get from bot after /start).
+
+### Local dev
+```bash
+pip install -e .
+cp .env.example .env   # fill in keys
+python -m src.daily_digest --dry-run
+python -m src.news_poller --dry-run
+```
+
+### GitHub Actions
+Workflows live under `.github/workflows/`. Enable Actions, add the 4 secrets above, push to `main`. Cron kicks in automatically.
 
 ## Roadmap
-
-### Week 1 — Data + Recommendation Core
-- Repo scaffold, `.env`/secrets, Python project setup.
-- `fetch_market_data.py` via pykrx.
-- `fetch_filings.py` via OpenDART (get API key).
-- `fetch_news.py` (Naver + RSS).
-- `analyze.py` Claude prompt + structured output schema.
-- CLI end-to-end run: `python -m src.daily_digest --dry-run`.
-
-### Week 2 — Delivery + Tracking + Deploy
-- Kakao OAuth flow, token storage, `send_kakao.py`.
-- `track_picks.py` + forward-return cron.
-- Cloud Run Jobs + Scheduler setup.
-- News poller + event-driven alert gate.
-- First live run with real watchlist.
-
-### Post-MVP (if picks prove valuable)
-- Web dashboard (Next.js) for rec history and performance charts.
-- Expand universe to full KOSPI/KOSDAQ.
-- Backtesting framework.
-- Evaluate regulatory path if external users are requested.
+- **Week 1** (current): scaffold + first live daily run.
+- **Week 2**: news poller + forward-return tracking dashboard.
+- **Post-MVP**: Kakao delivery, web dashboard, larger universe, backtesting.
 
 ## Open Decisions
-- [ ] Confirm seed watchlist (start from KOSPI 100 or your own list).
-- [ ] OpenDART API key registration.
-- [ ] Kakao Developers app registration (both users).
-- [ ] GCP project + billing.
+- [ ] Confirm seed watchlist (default is 30 KOSPI blue-chips in `config/watchlist.yaml`).
+- [ ] Register OpenDART API key.
+- [ ] Create Telegram bot, get chat IDs for both users.
 
 ## Development Commands
-_TBD once scaffold exists._
+```bash
+python -m src.daily_digest              # live run
+python -m src.daily_digest --dry-run    # no Telegram send, prints to stdout
+python -m src.news_poller               # live run
+python -m src.news_poller --dry-run
+python -m src.tracking backfill         # compute forward returns on logged picks
+```

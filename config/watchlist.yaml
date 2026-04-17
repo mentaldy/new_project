@@ -1,0 +1,34 @@
+# Seed watchlist — 30 KOSPI blue chips.
+# Edit freely: add/remove tickers, drop comments for your rationale.
+# ticker format: 6-digit Korea Exchange code (no market suffix).
+tickers:
+  - { code: "005930", name_ko: "삼성전자", name_en: "Samsung Electronics" }
+  - { code: "000660", name_ko: "SK하이닉스", name_en: "SK Hynix" }
+  - { code: "373220", name_ko: "LG에너지솔루션", name_en: "LG Energy Solution" }
+  - { code: "207940", name_ko: "삼성바이오로직스", name_en: "Samsung Biologics" }
+  - { code: "005380", name_ko: "현대차", name_en: "Hyundai Motor" }
+  - { code: "000270", name_ko: "기아", name_en: "Kia" }
+  - { code: "005490", name_ko: "POSCO홀딩스", name_en: "POSCO Holdings" }
+  - { code: "068270", name_ko: "셀트리온", name_en: "Celltrion" }
+  - { code: "035420", name_ko: "NAVER", name_en: "NAVER" }
+  - { code: "035720", name_ko: "카카오", name_en: "Kakao" }
+  - { code: "051910", name_ko: "LG화학", name_en: "LG Chem" }
+  - { code: "006400", name_ko: "삼성SDI", name_en: "Samsung SDI" }
+  - { code: "105560", name_ko: "KB금융", name_en: "KB Financial" }
+  - { code: "055550", name_ko: "신한지주", name_en: "Shinhan Financial" }
+  - { code: "086790", name_ko: "하나금융지주", name_en: "Hana Financial" }
+  - { code: "096770", name_ko: "SK이노베이션", name_en: "SK Innovation" }
+  - { code: "034730", name_ko: "SK", name_en: "SK Inc" }
+  - { code: "015760", name_ko: "한국전력", name_en: "KEPCO" }
+  - { code: "017670", name_ko: "SK텔레콤", name_en: "SK Telecom" }
+  - { code: "030200", name_ko: "KT", name_en: "KT" }
+  - { code: "003550", name_ko: "LG", name_en: "LG Corp" }
+  - { code: "066570", name_ko: "LG전자", name_en: "LG Electronics" }
+  - { code: "003670", name_ko: "포스코퓨처엠", name_en: "POSCO Future M" }
+  - { code: "010130", name_ko: "고려아연", name_en: "Korea Zinc" }
+  - { code: "018260", name_ko: "삼성SDS", name_en: "Samsung SDS" }
+  - { code: "032830", name_ko: "삼성생명", name_en: "Samsung Life" }
+  - { code: "009150", name_ko: "삼성전기", name_en: "Samsung Electro-Mechanics" }
+  - { code: "011200", name_ko: "HMM", name_en: "HMM" }
+  - { code: "028260", name_ko: "삼성물산", name_en: "Samsung C&T" }
+  - { code: "247540", name_ko: "에코프로비엠", name_en: "Ecopro BM" }
