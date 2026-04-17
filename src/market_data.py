@@ -42,17 +42,32 @@ def _last_business_day(d: date) -> date:
     return d
 
 
-def fetch_snapshot(code: str, asof: date | None = None) -> MarketSnapshot:
-    """Fetch OHLCV + fundamentals for a KRX ticker.
+def _fetch_ohlcv(code: str, s: str, e: str) -> pd.DataFrame:
+    """Try stock OHLCV first; fall back to ETF OHLCV (different pykrx endpoint)."""
+    try:
+        df = stock.get_market_ohlcv_by_date(s, e, code)
+        df = df[df["시가"] > 0] if not df.empty else df
+        if not df.empty:
+            return df
+    except Exception:
+        pass
+    try:
+        df = stock.get_etf_ohlcv_by_date(s, e, code)
+        if not df.empty and "종가" in df.columns:
+            df = df[df["종가"] > 0]
+            return df
+    except Exception:
+        pass
+    return pd.DataFrame()
 
-    Note: pykrx returns data for the most recent trading day at or before `asof`.
-    """
+
+def fetch_snapshot(code: str, asof: date | None = None) -> MarketSnapshot:
+    """Fetch OHLCV + fundamentals for a KRX ticker (works for stocks and ETFs)."""
     asof = _last_business_day(asof or date.today())
     start = asof - timedelta(days=40)  # enough for 20-day returns incl. holidays
     s, e = start.strftime("%Y%m%d"), asof.strftime("%Y%m%d")
 
-    ohlcv: pd.DataFrame = stock.get_market_ohlcv_by_date(s, e, code)
-    ohlcv = ohlcv[ohlcv["시가"] > 0]  # drop no-trade rows
+    ohlcv = _fetch_ohlcv(code, s, e)
     if ohlcv.empty:
         raise RuntimeError(f"No OHLCV for {code} in {s}-{e}")
 
@@ -65,11 +80,17 @@ def fetch_snapshot(code: str, asof: date | None = None) -> MarketSnapshot:
         prev = float(ohlcv.iloc[-1 - days_back]["종가"])
         return (close - prev) / prev * 100 if prev else float("nan")
 
-    fund = stock.get_market_fundamental_by_date(s, e, code)
-    fund_last = fund.iloc[-1] if not fund.empty else None
+    try:
+        fund = stock.get_market_fundamental_by_date(s, e, code)
+        fund_last = fund.iloc[-1] if not fund.empty else None
+    except Exception:
+        fund_last = None  # ETFs / unsupported tickers have no fundamentals
 
-    cap_df = stock.get_market_cap_by_date(s, e, code)
-    cap = int(cap_df.iloc[-1]["시가총액"]) if not cap_df.empty else None
+    try:
+        cap_df = stock.get_market_cap_by_date(s, e, code)
+        cap = int(cap_df.iloc[-1]["시가총액"]) if not cap_df.empty else None
+    except Exception:
+        cap = None
 
     return MarketSnapshot(
         code=code,

@@ -1,34 +1,22 @@
-# Seed watchlist — 30 KOSPI blue chips.
-# Edit freely: add/remove tickers, drop comments for your rationale.
-# ticker format: 6-digit Korea Exchange code (no market suffix).
+# Watchlist — mix of KR stocks and KR-listed ETFs.
+# asset_type: "stock" (default) or "etf" — drives how analyze.py prompts Claude.
+# Edit freely.
 tickers:
-  - { code: "005930", name_ko: "삼성전자", name_en: "Samsung Electronics" }
-  - { code: "000660", name_ko: "SK하이닉스", name_en: "SK Hynix" }
-  - { code: "373220", name_ko: "LG에너지솔루션", name_en: "LG Energy Solution" }
-  - { code: "207940", name_ko: "삼성바이오로직스", name_en: "Samsung Biologics" }
-  - { code: "005380", name_ko: "현대차", name_en: "Hyundai Motor" }
-  - { code: "000270", name_ko: "기아", name_en: "Kia" }
-  - { code: "005490", name_ko: "POSCO홀딩스", name_en: "POSCO Holdings" }
-  - { code: "068270", name_ko: "셀트리온", name_en: "Celltrion" }
-  - { code: "035420", name_ko: "NAVER", name_en: "NAVER" }
-  - { code: "035720", name_ko: "카카오", name_en: "Kakao" }
-  - { code: "051910", name_ko: "LG화학", name_en: "LG Chem" }
-  - { code: "006400", name_ko: "삼성SDI", name_en: "Samsung SDI" }
-  - { code: "105560", name_ko: "KB금융", name_en: "KB Financial" }
-  - { code: "055550", name_ko: "신한지주", name_en: "Shinhan Financial" }
-  - { code: "086790", name_ko: "하나금융지주", name_en: "Hana Financial" }
-  - { code: "096770", name_ko: "SK이노베이션", name_en: "SK Innovation" }
-  - { code: "034730", name_ko: "SK", name_en: "SK Inc" }
-  - { code: "015760", name_ko: "한국전력", name_en: "KEPCO" }
-  - { code: "017670", name_ko: "SK텔레콤", name_en: "SK Telecom" }
-  - { code: "030200", name_ko: "KT", name_en: "KT" }
-  - { code: "003550", name_ko: "LG", name_en: "LG Corp" }
-  - { code: "066570", name_ko: "LG전자", name_en: "LG Electronics" }
-  - { code: "003670", name_ko: "포스코퓨처엠", name_en: "POSCO Future M" }
-  - { code: "010130", name_ko: "고려아연", name_en: "Korea Zinc" }
-  - { code: "018260", name_ko: "삼성SDS", name_en: "Samsung SDS" }
-  - { code: "032830", name_ko: "삼성생명", name_en: "Samsung Life" }
-  - { code: "009150", name_ko: "삼성전기", name_en: "Samsung Electro-Mechanics" }
-  - { code: "011200", name_ko: "HMM", name_en: "HMM" }
-  - { code: "028260", name_ko: "삼성물산", name_en: "Samsung C&T" }
-  - { code: "247540", name_ko: "에코프로비엠", name_en: "Ecopro BM" }
+  # ── Your picks (KR stocks) ──
+  - { code: "033780", name_ko: "KT&G",            name_en: "KT&G",              asset_type: "stock" }
+  - { code: "010170", name_ko: "대한광통신",       name_en: "Taihan Fiberoptics", asset_type: "stock" }
+  - { code: "042370", name_ko: "그린광학",         name_en: "Green Optics",       asset_type: "stock" }
+  - { code: "043260", name_ko: "성호전자",         name_en: "SungHo Electronics", asset_type: "stock" }
+  - { code: "101330", name_ko: "모베이스",         name_en: "Mobase",             asset_type: "stock" }
+  - { code: "307750", name_ko: "모베이스전자",     name_en: "Mobase Electronics", asset_type: "stock" }
+  - { code: "277810", name_ko: "레인보우로보틱스", name_en: "Rainbow Robotics",   asset_type: "stock" }
+  - { code: "036170", name_ko: "에이치엠넥스",     name_en: "HMnex",              asset_type: "stock" }
+
+  # ── ETFs (default picks — edit/add/remove freely) ──
+  - { code: "069500", name_ko: "KODEX 200",                         name_en: "KODEX 200 (KOSPI200)",           asset_type: "etf" }
+  - { code: "091160", name_ko: "KODEX 반도체",                       name_en: "KODEX Semiconductor (KR)",       asset_type: "etf" }
+  - { code: "305720", name_ko: "KODEX 2차전지산업",                  name_en: "KODEX Secondary Battery (KR)",   asset_type: "etf" }
+  - { code: "360750", name_ko: "TIGER 미국S&P500",                   name_en: "TIGER US S&P 500",               asset_type: "etf" }
+  - { code: "133690", name_ko: "TIGER 미국나스닥100",                name_en: "TIGER US NASDAQ 100",            asset_type: "etf" }
+  - { code: "381180", name_ko: "TIGER 미국필라델피아반도체나스닥",     name_en: "TIGER US Phlx Semi NASDAQ",      asset_type: "etf" }
+  - { code: "117460", name_ko: "KODEX 에너지화학",                   name_en: "KODEX Energy/Chemical (KR)",     asset_type: "etf" }

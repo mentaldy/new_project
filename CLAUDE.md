@@ -1,7 +1,9 @@
 # Korean Stock Analyzing & Reporting App
 
 ## Project Overview
-Internal AI-powered stock recommendation tool for the Korean market (KOSPI/KOSDAQ). Screens a curated watchlist of ~30-100 tickers, generates Buy/Hold/Sell ratings with thesis/risks/citations using Claude Sonnet 4.6, and delivers digests via **Telegram** on a daily pre-market schedule plus event-driven news alerts. Orchestrated via **GitHub Actions cron**.
+Internal AI-powered stock + ETF recommendation tool for the Korean market (KOSPI/KOSDAQ, including KR-listed ETFs with foreign exposure). Screens a curated watchlist, generates Buy/Hold/Sell ratings with thesis/risks/citations using Claude Sonnet 4.6, and delivers digests via **Telegram** on a daily pre-market schedule plus event-driven news alerts. Orchestrated via **GitHub Actions cron**.
+
+Scope note: US-listed names (NYSE/NASDAQ) are out of scope for MVP. Korean investors can still get US exposure via KR-listed ETFs (e.g. TIGER 미국S&P500, TIGER 미국나스닥100).
 
 ## Status
 MVP scaffolding in place. Needs API keys + first live run.

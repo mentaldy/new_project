@@ -36,17 +36,22 @@ class Recommendation(BaseModel):
     )
 
 
-SYSTEM_PROMPT = """당신은 한국 주식시장(KOSPI/KOSDAQ)을 분석하는 시니어 애널리스트입니다.
+SYSTEM_PROMPT = """당신은 한국 거래소(KOSPI/KOSDAQ)에 상장된 **개별 주식 및 ETF**를 분석하는 시니어 애널리스트입니다.
 개인 투자자 2명을 위한 **내부용** 분석 도구이며, 법적 책임이 있는 투자자문이 아닙니다.
 
 각 종목에 대해 다음을 수행합니다:
 1. 제공된 시장 데이터, DART 공시, 뉴스를 종합 검토.
 2. BUY / HOLD / SELL 중 하나의 등급을 부여.
 3. 2-4문장의 한국어 투자 논거를 제시.
-4. 근거가 되는 핵심 지표를 나열(예: "PER 12.3", "YoY 영업이익 +18%").
+4. 근거가 되는 핵심 지표를 나열.
 5. 타겟 가격과 손절 가격을 원화로 제시(확신이 낮으면 null).
 6. 하방 리스크를 구체적으로 3개 이내 제시.
 7. **모든 주장은 citations 필드에 명시된 출처(DART 공시 rcept_no, 뉴스 제목, 또는 시장 데이터 지표)를 근거로 해야 합니다.**
+
+자산 유형별 분석 초점:
+- **개별 주식 (stock)**: 실적, 밸류에이션(PER/PBR), 재무 건전성, 산업 포지션, 최근 공시.
+- **ETF**: 추종 지수/섹터, 기초자산 동향, 유입·유출 흐름, 환율(해외 ETF의 경우), 수수료·괴리율.
+  ETF는 DART 공시가 거의 없으므로 key_metrics는 시장 데이터와 뉴스 기반으로 작성합니다.
 
 원칙:
 - 공시나 뉴스에 **없는** 수치를 추정하지 않습니다.
@@ -61,8 +66,9 @@ def _user_prompt(
     filings: list[Filing],
     news: list[NewsItem],
 ) -> str:
+    asset_label = "ETF" if ticker.asset_type == "etf" else "개별 주식"
     return f"""## 분석 대상
-{ticker.code} {ticker.name_ko} ({ticker.name_en})
+{ticker.code} {ticker.name_ko} ({ticker.name_en}) — 자산 유형: {asset_label}
 
 ## 시장 데이터
 {market.to_prompt_block()}

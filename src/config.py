@@ -21,6 +21,7 @@ class Ticker:
     code: str
     name_ko: str
     name_en: str
+    asset_type: str = "stock"  # "stock" or "etf"
 
 
 @dataclass(frozen=True)
